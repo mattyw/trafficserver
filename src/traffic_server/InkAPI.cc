@@ -21,9 +21,9 @@
   limitations under the License.
  */
 
-#include <cstdio>
 #include <atomic>
 #include <string_view>
+#include <string>
 
 #include "tscore/ink_platform.h"
 #include "tscore/ink_base64.h"
@@ -1871,6 +1871,122 @@ void
 _TSfree(void *ptr)
 {
   ats_free(ptr);
+}
+
+// Support code for TSHeapBuf.
+namespace
+{
+class HeapBuf
+{
+public:
+  HeapBuf(TSHeapBuf b = nullptr) : _p{reinterpret_cast<_S *>(b)} {}
+
+  HeapBuf(HeapBuf const &src) = delete;
+
+  HeapBuf(HeapBuf &&src)
+  {
+    _p     = src._p;
+    src._p = nullptr;
+    ;
+  }
+
+  HeapBuf &operator=(HeapBuf const &src) = delete;
+
+  HeapBuf &
+  operator=(HeapBuf &&src)
+  {
+    if (&src != this) {
+      if (_p) {
+        std::free(_p);
+      }
+      _p     = src._p;
+      src._p = nullptr;
+      ;
+    }
+    return *this;
+  }
+
+  static HeapBuf
+  allocate(size_t size)
+  {
+    if (!size) {
+      size = 1;
+    }
+    HeapBuf b{static_cast<TSHeapBuf>(std::malloc(sizeof(_S) - 1 + size))};
+    b._p->data_size = size;
+    return b;
+  }
+
+  char *
+  data()
+  {
+    if (!_p) {
+      return nullptr;
+    }
+    return _p->data;
+  }
+
+  size_t
+  size() const
+  {
+    if (!_p) {
+      return 0;
+    }
+    return _p->data_size;
+  }
+
+  TSHeapBuf
+  release()
+  {
+    TSHeapBuf result = reinterpret_cast<TSHeapBuf>(_p);
+    _p               = nullptr;
+    return result;
+  }
+
+  ~HeapBuf()
+  {
+    if (_p) {
+      std::free(_p);
+    }
+  }
+
+private:
+  struct _S {
+    size_t data_size;
+    alignas(std::max_align_t) char data[1]; // Variable size.
+  };
+
+  _S *_p{nullptr};
+};
+
+} // end anonymous namespace
+
+char *
+TSHeapBufData(TSHeapBuf b)
+{
+  sdk_assert(sdk_sanity_check_null_ptr(b) == TS_SUCCESS);
+
+  HeapBuf bb{b};
+  char *data = bb.data();
+  bb.release();
+  return data;
+}
+
+size_t
+TSHeapBufLength(TSHeapBuf b)
+{
+  sdk_assert(sdk_sanity_check_null_ptr(b) == TS_SUCCESS);
+
+  HeapBuf bb{b};
+  size_t size = bb.size();
+  bb.release();
+  return size;
+}
+
+void
+TSHeapBufFree(TSHeapBuf b)
+{
+  HeapBuf bb(b);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -9628,23 +9744,20 @@ TSSslContextFindByAddr(struct sockaddr const *addr)
 tsapi TSReturnCode
 TSSslSecretSet(const char *secret_name, int secret_name_length, const char *secret_data, int secret_data_len)
 {
-  TSReturnCode retval          = TS_SUCCESS;
+  TSReturnCode retval = TS_SUCCESS;
+  std::string const secret_name_str{secret_name, unsigned(secret_name_length)};
   SSLConfigParams *load_params = SSLConfig::load_acquire();
   SSLConfigParams *params      = SSLConfig::acquire();
   if (load_params != nullptr) { // Update the current data structure
     Debug("ssl.cert_update", "Setting secrets in SSLConfig load for: %.*s", secret_name_length, secret_name);
-    if (!load_params->secrets.setSecret(std::string(secret_name, secret_name_length), secret_data, secret_data_len)) {
-      retval = TS_ERROR;
-    }
-    load_params->updateCTX(std::string(secret_name, secret_name_length));
+    load_params->secrets.setSecret(secret_name_str, std::string_view(secret_data, secret_data_len));
+    load_params->updateCTX(secret_name_str);
     SSLConfig::load_release(load_params);
   }
   if (params != nullptr) {
     Debug("ssl.cert_update", "Setting secrets in SSLConfig for: %.*s", secret_name_length, secret_name);
-    if (!params->secrets.setSecret(std::string(secret_name, secret_name_length), secret_data, secret_data_len)) {
-      retval = TS_ERROR;
-    }
-    params->updateCTX(std::string(secret_name, secret_name_length));
+    params->secrets.setSecret(secret_name_str, std::string_view(secret_data, secret_data_len));
+    params->updateCTX(secret_name_str);
     SSLConfig::release(params);
   }
   return retval;
@@ -9662,32 +9775,27 @@ TSSslSecretUpdate(const char *secret_name, int secret_name_length)
   return retval;
 }
 
-tsapi TSReturnCode
-TSSslSecretGet(const char *secret_name, int secret_name_length, const char **secret_data_return, int *secret_data_len)
+tsapi TSHeapBuf
+TSSslSecretGet(const char *secret_name, int secret_name_length)
 {
   bool loading            = true;
-  TSReturnCode retval     = TS_SUCCESS;
   SSLConfigParams *params = SSLConfig::load_acquire();
   if (params == nullptr) {
     params  = SSLConfig::acquire();
     loading = false;
   }
-  std::string_view secret_data;
-  if (!params->secrets.getSecret(std::string(secret_name, secret_name_length), secret_data)) {
-    retval = TS_ERROR;
-  }
-  if (secret_data_return) {
-    *secret_data_return = secret_data.data();
-  }
-  if (secret_data_len) {
-    *secret_data_len = secret_data.size();
+  std::string const secret_data = params->secrets.getSecret(std::string(secret_name, secret_name_length));
+  HeapBuf b;
+  if (!secret_data.empty()) {
+    b = HeapBuf::allocate(secret_data.size());
+    memcpy(b.data(), secret_data.data(), secret_data.size());
   }
   if (loading) {
     SSLConfig::load_release(params);
   } else {
     SSLConfig::release(params);
   }
-  return retval;
+  return b.release();
 }
 
 /**

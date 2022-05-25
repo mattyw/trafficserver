@@ -1460,6 +1460,9 @@ namespace ts
 }
 #endif
 
+// Handle for dynamically allocated variable-length buffer, with data returned by a TS API call.  May be null.
+typedef struct tsapi_heapbuf *TSHeapBuf;
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

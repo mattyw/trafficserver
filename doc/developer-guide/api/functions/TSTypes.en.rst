@@ -114,6 +114,12 @@ more widely. Those are described on this page.
 
    Enumeration that specifies the type of data within a :c:type:`TSHttpConnectOptions` structure.
 
+.. type:: TSHeapBuf
+
+   Handle of a variable-sized, dynamically-allocated buffer, whose location is given by
+   :func:`TSHeapBufData`, size by :func:`TSHeapBufLength`, and is deallocated with
+   :func:`TSHeapBufFree`.
+
 .. type:: TSHttpParser
 
 .. type:: TSHttpSsn

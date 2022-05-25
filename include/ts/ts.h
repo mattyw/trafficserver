@@ -1304,8 +1304,10 @@ tsapi TSReturnCode TSSslServerCertUpdate(const char *cert_path, const char *key_
 
 /* Update the transient secret table for SSL_CTX loading */
 tsapi TSReturnCode TSSslSecretSet(const char *secret_name, int secret_name_length, const char *secret_data, int secret_data_len);
-tsapi TSReturnCode TSSslSecretGet(const char *secret_name, int secret_name_length, const char **secret_data_return,
-                                  int *secret_data_len);
+
+/* Returns secret with given name in a heap buffer.  Returns a null TSHeapBuf handle if there is no secret with the
+** given name.  Calling code must free TSHeapBuf by calling TSHeapBufFree. */
+tsapi TSHeapBuf TSSslSecretGet(const char *secret_name, int secret_name_length);
 
 tsapi TSReturnCode TSSslSecretUpdate(const char *secret_name, int secret_name_length);
 
@@ -2748,6 +2750,32 @@ tsapi void TSHostStatusSet(const char *hostname, const size_t hostname_len, TSHo
  */
 tsapi bool TSHttpTxnCntlGet(TSHttpTxn txnp, TSHttpCntlType ctrl);
 tsapi TSReturnCode TSHttpTxnCntlSet(TSHttpTxn txnp, TSHttpCntlType ctrl, bool data);
+
+/**
+ * @brief Function that returns a pointer to data associated with a TSHeapBuf handle.
+ *
+ * @param A TSHeapBuf handle.
+ * @return A (non-null) pointer to data associated with a TSHeapBuf handle.
+ * @note The returned pointer has universal alignment (like a pointer returned by malloc() ), you can (reinterpret) cast it
+ * to a pointer to any type.
+ */
+tsapi char *TSHeapBufData(TSHeapBuf);
+
+/**
+ * @brief Function that returns the lenghth of the data associated with a TSHeapBuf handle.
+ *
+ * @param A TSHeapBuf handle.
+ * @return The length of the data associated with a TSHeapBuf handle.
+ */
+tsapi size_t TSHeapBufLength(TSHeapBuf);
+
+/**
+ * @brief Function that frees the buffer associated with a TSHeapBuf handle.
+ *
+ * @param The TSHeapBuf handle of the buffer to be freed.
+ * @note This function does nothing if the handle is null.
+ */
+tsapi void TSHeapBufFree(TSHeapBuf);
 
 #ifdef __cplusplus
 }
