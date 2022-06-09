@@ -117,6 +117,12 @@ public:
   APIHook *next() const;
   APIHook *prev() const;
   LINK(APIHook, m_link);
+
+  // This is like invoke(), but allows for blocking on continuation mutexes.  It is a hack, calling it can block
+  // the calling thread.  It should be replaced with a version with a continuation parameter, providing a continuation
+  // to be called when the hook handling is complete.
+  //
+  int blocking_invoke(int event, void *edata) const;
 };
 
 /// A collection of API hooks.

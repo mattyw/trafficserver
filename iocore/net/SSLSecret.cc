@@ -35,7 +35,7 @@ SSLSecret::loadSecret(const std::string &name1, const std::string &name2, std::s
   secret_name.key_name      = name2.data();
   secret_name.key_name_len  = name2.size();
   while (curHook) {
-    curHook->invoke(TS_EVENT_SSL_SECRET, &secret_name);
+    curHook->blocking_invoke(TS_EVENT_SSL_SECRET, &secret_name);
     curHook = curHook->next();
   }
 
