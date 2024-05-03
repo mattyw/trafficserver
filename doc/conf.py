@@ -68,6 +68,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.plantuml',
     'sphinxcontrib.jquery',
+    'sphinx_simplepdf',
     'traffic-server',
 ]
 
