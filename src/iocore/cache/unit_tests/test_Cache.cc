@@ -56,3 +56,13 @@ TEST_CASE("cache write -> read", "cache")
   this_ethread()->schedule_imm(init);
   this_thread()->execute();
 }
+
+TEST_CASE("matty", "cache")
+{
+  init_cache(256 * 1024 * 1024);
+  // large write test
+  CacheCommInit *init = new CacheCommInit;
+
+  this_ethread()->schedule_imm(init);
+  this_thread()->execute();
+}

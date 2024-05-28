@@ -7,6 +7,31 @@
   },
   "configurePresets": [
     {
+      "name": "clang",
+      "hidden": true,
+      "environment": {
+        "LDFLAGS": "-L/opt/homebrew/opt/llvm/lib -L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
+        "CPPFLAGS": "-I/opt/homebrew/opt/llvm/include",
+        "CXXFLAGS": "-stdlib=libc++",
+        "CC": "/opt/homebrew/opt/llvm/bin/clang",
+        "CXX": "/opt/homebrew/opt/llvm/bin/clang++",
+        "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+        "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++"
+      }
+    },
+    {
+      "name": "matty",
+      "displayName": "matty development",
+      "description": "My Dmatty Presets",
+      "binaryDir": "${sourceDir}/build-mattyw",
+      "generator": "Ninja",
+      "inherits": ["clang", "dev"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+      }
+    },
+    {
       "name": "default",
       "displayName": "Default build with ninja",
       "description": "Default build using Ninja generator",

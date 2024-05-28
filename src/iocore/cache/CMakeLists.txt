@@ -86,6 +86,8 @@ if(BUILD_TESTING)
   add_cache_test(Update_S_to_L unit_tests/test_Update_S_to_L.cc)
   add_cache_test(Update_Header unit_tests/test_Update_header.cc)
   add_cache_test(CacheStripe unit_tests/test_Stripe.cc)
+  add_executable(matty matty/matty.cc)
+  target_link_libraries(matty PRIVATE ts::inkcache)
 
 endif()
 
