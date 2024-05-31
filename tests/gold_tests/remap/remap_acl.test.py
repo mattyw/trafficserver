@@ -309,7 +309,7 @@ named_acl_allow = Test_remap_acl(
     ip_allow_content=IP_ALLOW_CONTENT,
     deactivate_ip_allow=False,
     #acl_configuration='@action=deny',
-    acl_configuration='',
-    #named_acls=[('allow', '@action=allow @method=GET @method=HEAD')],
-    named_acls=[],
+    acl_configuration='@action=allow',
+    named_acls=[('allow', '@action=allow @method=GET @method=HEAD')],
+    #named_acls=[],
     expected_responses=[200, 200])

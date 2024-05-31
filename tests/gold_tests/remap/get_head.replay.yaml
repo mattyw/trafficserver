@@ -59,4 +59,6 @@ sessions:
         - [ uuid, head ]
         - [ X-Request, head ]
 
-    <<: *standard_response
+        #<<: *standard_response
+    server-response:
+      status: 201
