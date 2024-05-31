@@ -52,6 +52,7 @@ class Test_remap_acl:
         self._acl_configuration = acl_configuration
         self._named_acls = named_acls
         self._expected_responses = expected_responses
+        self.name = name
 
         tr = Test.AddTestRun(name)
         self._configure_server(tr)
@@ -107,6 +108,9 @@ class Test_remap_acl:
         remap_config_lines.append(f'map / http://127.0.0.1:{self._server.Variables.http_port} {self._acl_configuration}')
         ts.Disk.remap_config.AddLines(remap_config_lines)
         ts.Disk.ip_allow_yaml.AddLines(self._ip_allow_content.split("\n"))
+        print(self.name)
+        for l in remap_config_lines:
+            print(l)
 
     def _configure_client(self, tr: 'TestRun') -> None:
         """Run the test.
@@ -296,3 +300,12 @@ test_ip_allow_optional_methods = Test_remap_acl(
     acl_configuration='@action=allow @in_ip=3.4.5.6 @method=GET @method=POST',
     named_acls=[],
     expected_responses=[200, 403, 403, 403, 403])
+
+named_acl_allow = Test_remap_acl(
+    "Verify we can deny all but allow in a named acl.",
+    replay_file='get_head.replay.yaml',
+    ip_allow_content=IP_ALLOW_CONTENT,
+    deactivate_ip_allow=False,
+    acl_configuration='@action=deny',
+    named_acls=[('allow', '@action=allow @method=GET @method=HEAD')],
+    expected_responses=[200, 200])
